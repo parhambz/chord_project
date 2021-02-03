@@ -1,6 +1,9 @@
 from message import message
 import  math
+from multiprocessing.managers import BaseManager
+from random import randint
 SERVER=-1
+GUEST=-2
 class ChordNode():
     def __init__(self,id,q,inbox,n):
         self.ft=[]
@@ -60,7 +63,7 @@ class ChordNode():
                             break
                 '''
             if (msg.data[0]=="added"):
-                print()
+                pass
                 #self.fillFt()
             if (msg.data[0] == "setpreds"):
                 self.pred=msg.data[1]
@@ -69,9 +72,9 @@ class ChordNode():
             if (msg.data[0]=="adddata"):
                 self.data.append(msg.data[1])
                 
-
-def start(connection,inbox,id,sucs,preds,n):
-
+class myManager(BaseManager):
+    pass
+def start(inbox,connection,id,sucs,preds,n):
     node=ChordNode(id,connection,inbox,n)
     connection.put(message(id,SERVER,("add",id)))
     node.send_to_node(message(id,sucs,("setpreds",id)))
@@ -80,3 +83,29 @@ def start(connection,inbox,id,sucs,preds,n):
     node.pred=preds
     #node.fillFt()
     node.run()
+def rand_start(n):
+    myManager.register('get_connection')
+    myManager.register('get_inbox')
+    myManager.register('get_guest_queue')
+    m = myManager(address=('localhost', 50000), authkey=b'abc')
+    m.connect()
+    gq=m.get_guest_queue()
+    connection = m.get_connection()
+    id=None
+    mysucs=None
+    while(True):
+        rint=randint(0,n)
+        connection.put(message(GUEST,SERVER,("sucs",rint)))
+        resp=gq.get()
+        if resp.data[1]==False:
+            id=rint
+            mysucs=rint
+            break
+        if resp.data[1]!=rint:
+            id=rint
+            mysucs=resp.data[1]
+            break
+    connection.put(message(GUEST,SERVER,("preds",id)))
+    resp=gq.get()
+    start(m.get_inbox(id),connection,id,mysucs,resp.data[1],n)
+

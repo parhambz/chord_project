@@ -1,6 +1,5 @@
 import multiprocessing as ml
-import node
-import message
+from message import message
 SERVER=-1
 SUCS=-2
 class Chord():
@@ -15,6 +14,7 @@ class Chord():
             return
         self.nodes[id][1].put(data)
     def start(self):
+        print("chord server started successfully")
         while (True):
             msg=self.connection.get()
             if msg.reciever !=SERVER:
@@ -48,5 +48,6 @@ def run_server(c):
     c.start()
 def start(n):
     chord_server=Chord(n)
-    ml.Process(target=run_server,args=(chord_server,))
+    p=ml.Process(target=run_server,args=(chord_server,))
+    p.start()
     return (chord_server.nodes,chord_server.connection)

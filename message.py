@@ -3,3 +3,5 @@ class message():
         self.sender=sender
         self.reciever=reciever
         self.data=data
+    def __str__(self):
+        return "message from "+str(self.sender) +" to "+str(self.reciever)+" data:\n"+str(self.data)

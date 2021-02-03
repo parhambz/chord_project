@@ -1,9 +1,6 @@
-import multiprocessing as ml
-from random import randint
-import message
+from message import message
 import  math
 SERVER=-1
-STARTER=-4
 class ChordNode():
     def __init__(self,id,q,inbox,n):
         self.ft=[]
@@ -24,7 +21,7 @@ class ChordNode():
             return True
 
         if (self.pred>self.id):
-            if num>self.pred:
+            if num>self.pred or num<self.id:
                 return True
         if (num>self.pred and num<self.id):
             return True
@@ -46,6 +43,7 @@ class ChordNode():
         for i in range(lenFT):
             self.ft[i]=self.requestSucs((self.id+ 2**i)%n)
     def run(self):
+        print("node",self.id,"started successfully with preds",self.pred,"and sucs",self.sucs)
         while(True):
             msg=self.inbox.get()
             if (msg.data[0] == "preds"):
@@ -62,7 +60,8 @@ class ChordNode():
                             break
                 '''
             if (msg.data[0]=="added"):
-                self.fillFt()
+                print()
+                #self.fillFt()
             if (msg.data[0] == "setpreds"):
                 self.pred=msg.data[1]
             if (msg.data[0] == "setsucs"):

@@ -2,32 +2,51 @@ import multiprocessing as ml
 import node
 import message
 SERVER=-1
+SUCS=-2
 class Chord():
     def __init__(self,n):
         self.n=n
         self.connection=ml.Queue()
-        self.nodes=[]
+        self.nodes=[(i,ml.Queue()) for i in range(n)]
+        self.activeNodes=[False for i in range(n)]
     def send_to_node(self,id,data):
-        for n in self.nodes:
-            if n[0]==id:
-                n[1].put(data)
+        if id==SERVER:
+            self.connection.put(data)
+            return
+        self.nodes[id][1].put(data)
     def start(self):
         while (True):
             msg=self.connection.get()
             if msg.reciever !=SERVER:
                 self.connection.put(msg)
             else:
+                if (msg.data[0]=="forward"):
+                    temp_msg=msg.data[1]
+                    self.send_to_node(temp_msg.reciever,temp_msg)
                 if (msg.data[0]=="sucs"):
-                    if len(self.nodes)!=0:
-                        self.connection.put(message(msg.sender,self.nodes[0],("sucs",msg.data[1])))
+                    if True not in self.activeNodes:
+                        self.send_to_node(SERVER, message(SERVER, msg.sender, ("sucsresp", -2)))
                     else:
-                        self.connection.put(message(SERVER,msg.sender,("resp",(msg.data[1],-2))))
+                        for i in range(self.n):
+                            if self.activeNodes[i]:
+                                self.send_to_node(self.nodes[i][0],
+                                                  data=message(msg.sender, self.nodes[i][0], ("sucs", msg.data[1])))
+                                break
                 if(msg.data[0]=="add"):
-                    for i in self.nodes:
-                        self.connection.put(message(SERVER,i,("added",msg.data[1])))
-                    self.nodes.append(msg.data[1])
+                    self.activeNodes[msg.data[1]]=True
+                    for i in range(len(self.nodes)):
+                        if self.nodes[i][0]!=msg.data[1] and self.activeNodes[i]:
+                            self.send_to_node(self.nodes[i][0],message(SERVER,self.nodes[i][0],("added",msg.data[1])))
+
 
                 if (msg.data[0]=="remove"):
-                    for i in self.nodes:
-                        self.connection.put(message(SERVER,i,("added",msg.data[1])))
-                    self.nodes.remove(msg.data[1])
+                    self.activeNodes[msg.data[1]]=False
+                    for i in range(len(self.nodes)):
+                        if self.nodes[i][0]!=msg.data[1] and self.activeNodes[i]:
+                            self.send_to_node(self.nodes[i][0],message(SERVER,self.nodes[i][0],("removed",msg.data[1])))
+def run_server(c):
+    c.start()
+def start(n):
+    chord_server=Chord(n)
+    ml.Process(target=run_server,args=(chord_server,))
+    return (chord_server.nodes,chord_server.connection)

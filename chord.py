@@ -4,6 +4,7 @@ from multiprocessing.managers import BaseManager
 
 SERVER=-1
 GUEST=-2
+n=100
 class Chord():
     def __init__(self,n):
         self.n=n
@@ -85,3 +86,5 @@ def start(n):
     m = myManager(address=('localhost', 50000), authkey=b'abc')
     s = m.get_server()
     s.serve_forever()
+if __name__ == '__main__':
+    start(n)
